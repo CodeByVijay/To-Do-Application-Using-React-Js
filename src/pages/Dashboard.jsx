@@ -8,6 +8,7 @@ const Dashboard = () => {
   const [todoText, setTodoText] = useState("");
   const [todo, setTodo] = useState(JSON.parse(todoDatas));
   const [editId, setEditId] = useState("");
+  const [subTodoEditId, setSubTodoEditId] = useState("");
 
   const [parantTodoId, setParantTodoId] = useState("");
   const [subTodoOpen, setSubTodoOpen] = useState("");
@@ -46,7 +47,10 @@ const Dashboard = () => {
 
   const handleCloseModal = () => {
     setShowModal(false);
+    setShowEditModal(false);
+    setSubTodoEditId("");
     setParantTodoId("");
+    setTodoText("");
   };
 
   const handleDelete = (e, todoId) => {
@@ -77,9 +81,11 @@ const Dashboard = () => {
     const index = todo.findIndex((item) => item.id === todoId);
     const updatedTodo = [...todo];
     updatedTodo[index].completed = !updatedTodo[index].completed;
+    updatedTodo[index].subToDos.length>0 && updatedTodo[index].subToDos.map((val,i)=>val.completed=updatedTodo[index].completed)
     setTodo(updatedTodo);
     localStorage.setItem("todos", JSON.stringify(updatedTodo));
   };
+
   const HandleSubTodoDivOpen = (e, index) => {
     setSubTodoOpen(index);
   };
@@ -91,7 +97,54 @@ const Dashboard = () => {
     setShowModal(true);
   };
 
-  const handleSubTodoEdit = (e, parantid, childId) => {};
+  const handleSubTodoEdit = (e, parantid, childId) => {
+    const index = todo.findIndex((item) => item.id === parantid);
+    const getTodo = [...todo];
+    const subTodoIndex = [
+      getTodo[index].subToDos.findIndex((item) => item.id === childId),
+    ];
+
+    setSubTodoEditId(getTodo[index].subToDos[subTodoIndex].id);
+    setParantTodoId(getTodo[index].id);
+    setTodoText(getTodo[index].subToDos[subTodoIndex].value);
+    setShowEditModal(true);
+  };
+
+  const handleEditSubToDo = (parantid, childId) => {
+    const index = todo.findIndex((item) => item.id === parantid);
+    const getTodo = [...todo];
+    const subTodoIndex = [
+      getTodo[index].subToDos.findIndex((item) => item.id === childId),
+    ];
+    getTodo[index].subToDos[subTodoIndex].value = todoText;
+    setTodo(getTodo);
+    localStorage.setItem("todos", JSON.stringify(getTodo));
+    setShowEditModal(false);
+    setEditId("");
+    setParantTodoId('')
+    setSubTodoEditId("");
+    setTodoText("");
+  };
+
+  const handleSubTodoComplete = (e,parantid,childId)=>{
+    const index = todo.findIndex((item) => item.id === parantid);
+    const getTodo = [...todo];
+    const subTodoIndex = [
+      getTodo[index].subToDos.findIndex((item) => item.id === childId),
+    ];
+    getTodo[index].subToDos[subTodoIndex].completed = !getTodo[index].subToDos[subTodoIndex].completed;
+   
+    const allSubTodosCompleted = getTodo[index].subToDos.every(
+        (subTodo) => subTodo.completed
+      );
+    allSubTodosCompleted?getTodo[index].completed = true:getTodo[index].completed = false;
+    //   console.log("All subToDos completed:", allSubTodosCompleted);
+
+    // console.log(,"getTodo[index].subToDos[subTodoIndex].completed")
+    setTodo(getTodo);
+    localStorage.setItem("todos", JSON.stringify(getTodo));
+  }
+
   const handleSubTodoDelete = (e, parantid, childId) => {
     const index = todo.findIndex((item) => item.id === parantid);
     const subTodos = [...todo];
@@ -201,11 +254,11 @@ const Dashboard = () => {
                                     false
                                   }
                                   class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                                  onChange={(e) => handleComplete(e, subVal.id)}
+                                  onChange={(e) => handleSubTodoComplete(e, val.id, subVal.id)}
                                 />
                               </div>
                               {subVal.completed ? (
-                                <div className="todoTitle col-span-4">
+                                <div className="todoTitle col-span-3">
                                   <strike
                                     className={`decoration-[${ThemeColor["black"]}] text-[${ThemeColor["rose_500"]}]`}
                                   >
@@ -319,7 +372,11 @@ const Dashboard = () => {
               <div className="border-0 rounded-lg shadow-lg relative flex flex-col w-full bg-white outline-none focus:outline-none">
                 {/*header*/}
                 <div className="flex items-start justify-between p-5 border-b border-solid border-slate-200 rounded-t w-full text-center">
-                  <h3 className="text-3xl font-semibold">Edit To-Do</h3>
+                  {subTodoEditId !== "" ? (
+                    <h3 className="text-3xl font-semibold">Edit Sub To-Do</h3>
+                  ) : (
+                    <h3 className="text-3xl font-semibold">Edit To-Do</h3>
+                  )}
                 </div>
                 {/*body*/}
                 <div className="relative p-6 flex-auto">
@@ -337,17 +394,27 @@ const Dashboard = () => {
                   <button
                     className="text-red-500 background-transparent font-bold uppercase px-6 py-2 text-sm outline-none focus:outline-none mr-1 mb-1 ease-linear transition-all duration-150 md:text-sm sm:text-sm text-xs"
                     type="button"
-                    onClick={() => setShowEditModal(false)}
+                    onClick={() => handleCloseModal()}
                   >
                     Close
                   </button>
-                  <button
-                    className={`bg-[${ThemeColor["blue_500"]}] text-white active:[${ThemeColor["blue_600"]}]  font-bold uppercase text-sm px-6 py-3 rounded shadow hover:shadow-lg outline-none focus:outline-none mr-1 mb-1 ease-linear transition-all duration-150 md:text-sm sm:text-sm text-xs`}
-                    type="button"
-                    onClick={() => handleEditToDo(editId)}
-                  >
-                    Save
-                  </button>
+                  {subTodoEditId !== "" ? (
+                    <button
+                      className={`bg-[${ThemeColor["blue_500"]}] text-white active:[${ThemeColor["blue_600"]}]  font-bold uppercase text-sm px-6 py-3 rounded shadow hover:shadow-lg outline-none focus:outline-none mr-1 mb-1 ease-linear transition-all duration-150 md:text-sm sm:text-sm text-xs`}
+                      type="button"
+                      onClick={() => handleEditSubToDo(parantTodoId, subTodoEditId)}
+                    >
+                      Save
+                    </button>
+                  ) : (
+                    <button
+                      className={`bg-[${ThemeColor["blue_500"]}] text-white active:[${ThemeColor["blue_600"]}]  font-bold uppercase text-sm px-6 py-3 rounded shadow hover:shadow-lg outline-none focus:outline-none mr-1 mb-1 ease-linear transition-all duration-150 md:text-sm sm:text-sm text-xs`}
+                      type="button"
+                      onClick={() => handleEditToDo(editId)}
+                    >
+                      Save
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
